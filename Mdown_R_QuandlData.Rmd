@@ -1,0 +1,100 @@
+---
+title: "Finance Data"
+author: "Aakriti K"
+date: "Tuesday, December 29, 2015"
+output: html_document
+---
+***
+Venture capitalists are committed to funding America's most innovative entrepreneurs and working alongside them to transform breakthrough ideas into emerging growth companies that drive U.S. job creation and economic growth.The NVCA or **National Venture Capital Association**, serves as the definitive resource for venture capital data and unites its over 300 member firms through a full range of professional services.The data retrieved from Quandl through R originates from the NVCA yearbook, which includes a comprehensive analysis of U.S. venture capital industry statistics. Values in USD million.
+
+Our analysis is aimed at studying the **trends of venture capital investments** in multiple forays of the country.These include investments made towards Clean Technology, Corporate Technology and also the investments made across the countries in different geographical regions.
+
+### Data loading and data cleaning activities:
+```{r, warning=FALSE, message=FALSE, fig.align='center', fig.height=7, fig.width=8}
+#Installing packages and running respective libraries
+#install.packages("Quandl")
+#install.packages("GGally")
+library(Quandl)
+library(ggplot2)
+library(GGally)
+library(lubridate)
+#To allow more than 50 calls/day to data from Quandl add authentication function
+Quandl.auth("hY9Sz5Q699v8hBswx2JV")
+
+#Create dataframes
+corpInv = Quandl("NVCA/VENTURE_3_32")
+cleantech_inv = Quandl("NVCA/VENTURE_3_33")
+vcInv_Region = Quandl("NVCA/VENTURE_3_08")
+vcInv_Stage = Quandl("NVCA/VENTURE_3_09")
+
+#Replacing the column names to make them clearer for users
+colnames(vcInv_Region)[which(names(vcInv_Region) == "Silicon Valley")] <- "SiliconValley"
+colnames(vcInv_Region)[which(names(vcInv_Region) == "Upstate NY")] <- "UpstateNY"
+colnames(vcInv_Region)[which(names(vcInv_Region) == "Sacramento/N.Cal")] <- "Sacramento"
+colnames(cleantech_inv)[which(names(cleantech_inv) == "Clean Technology Investments ($M)")] <- "CTInvestmentInMillions"
+colnames(corpInv)[which(names(corpInv) == "Number of All Venture Capital Deals")] <- "TotalVCDeals"
+colnames(corpInv)[which(names(corpInv) == "Number of Deals with CVC Involvement")] <- "TotalDealsCVC"
+colnames(corpInv)[which(names(corpInv) == "Percentage of Deals with CVC Involvment")] <- "PercentageDealsCVC"
+colnames(corpInv)[which(names(corpInv) == "Avg Amt of All VC Deals ($M)")] <- "AvgAmtVCDealsMils"
+colnames(corpInv)[which(names(corpInv) == "Total VC Investment ($M)")] <- "TotalVCInvInMils"
+colnames(corpInv)[which(names(corpInv) == "Percentage of Dollars Coming from CVCs")] <- "PerDollarsfromCVC"
+colnames(corpInv)[which(names(corpInv) == "Total CVC Investment ($M)")] <- "CVCInvInMillions"
+
+#Obtaining year component from Date format
+corpInv$Yearis <- year(corpInv$Year)
+cleantech_inv$Yearis <- year(cleantech_inv$Year)
+vcInv_Region$Yearis <- year(vcInv_Region$Year)
+
+#Creating a subset from the Investment by Regions dataframe to transform to Time Series
+vcvInv_ts<-as.data.frame(subset(vcInv_Region, select = SiliconValley:Sacramento))
+class(vcvInv_ts)
+
+#Transformation to time-series
+vcvInv_Region_ts<-ts(vcvInv_ts)                     
+```
+
+### Generating plots to study the relationship between variables
+```{r,warning=FALSE, message=FALSE, fig.align='center', fig.height=7, fig.width=8}
+#Plot for Clean Tech Investments per year
+ggplot(data=cleantech_inv, aes(x=Yearis, y=CTInvestmentInMillions))+
+geom_line(color="#FAB521")+
+theme(plot.title = element_text(lineheight=1500,face="bold"),panel.background = element_rect(fill="#393939"), panel.grid.major.x = element_blank(),
+panel.grid.major.y = element_line(colour="white", size=0.1),
+panel.grid.minor = element_line(colour="white", size=0.1))+
+xlab("Years")+ylab("Investment In Millions")+ggtitle("Overall Trend: Clean Technology Investments")
+
+#Plot for Corporate Investments per year
+ggplot(data=corpInv, aes(x=Yearis, y=CVCInvInMillions)) +
+geom_line(color="#FAB521") +
+theme(plot.title = element_text(lineheight=1500,face="bold"),panel.background = element_rect(fill="#393939"), panel.grid.major.x = element_blank(),
+panel.grid.major.y = element_line(colour="white", size=0.1),
+panel.grid.minor = element_line(colour="white", size=0.1))+
+xlab("Years")+ylab("Investment In Millions")+ggtitle("Overall Trend: Corporate Investments")
+
+```
+
+The two plots depict trends of investment made over the years for ventures that work towards **Clean Technologies** and those that contribute to **Corporate technologies** respectively.
+As depicted through the plots, there is a boom in investments for Clean Technology after 2005 which is also the same time when investments towards Corporate Technology face a major slump.Over the years, there has been more concentration towards investing into more environment friendly technologies.
+
+A significant observation made is that there is a lull in investment made during **early 2000s** towards *both* sectors. This could be attributed to the **decline in economic activity** which mainly occurred in developed countries during that period.
+
+```{r, warning=FALSE, message=FALSE, fig.align='center', fig.height=7, fig.width=9}
+#Time Series Plot for Venture Capital Investments By Region 
+plot(test_TS, plot.type="single", col = unique(test_TS),main="Comparitive Analysis: VCV Investment/Region",ylab="Investment in Millions",lwd=2)
+legend("topright", colnames(test_TS), col= unique(test_TS), lty=1, cex=.65, bty="n",lwd=2)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.align='center', fig.height=7, fig.width=8}
+
+#Plot for Total Venture Capital Investments By Region from 1985-2014
+ggplot(data=vcInv_Region, aes(x=Yearis, y=Total))+
+geom_line(color="#FAB521")+
+theme(plot.title = element_text(lineheight=1500,face="bold"),panel.background = element_rect(fill="#393939"), panel.grid.major.x = element_blank(),
+panel.grid.major.y = element_line(colour="white", size=0.1),
+panel.grid.minor = element_line(colour="white", size=0.1))+
+xlab("Years")+
+ylab("Investment In Millions")+
+ggtitle("Overall Trend: Regional VC Investments")
+```
+
+Converting data from the regional venture capital investments into a *Time Series format* we can analyze the data across time and across regions. The single graph plot allows us to do a comparitive analysis. As indicated in the plot, **Silicon Valley** has predictabily the highest investments made into technology across spheres.
